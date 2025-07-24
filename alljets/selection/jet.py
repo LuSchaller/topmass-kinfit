@@ -43,9 +43,7 @@ def jet_selection(
     # b-tagged jets (tight wp)
     bjet_mask = (jet_mask2) & (events.Jet.btagDeepFlavB >= wp_tight)
 
-    bjet_sel = ((ak.sum(bjet_mask, axis=1) >= 2) &
-                (ak.sum(jet_mask2[:, :2], axis=1) == ak.sum(bjet_mask[:, :2], axis=1))
-                )
+    bjet_sel = ((ak.sum(bjet_mask, axis=1) >= 2))
     sixjets_sel = (bjet_sel & (ak.sum(light_jet, axis=1) >= 4))
 
     # B-Jet Rejection for bkg estimation
