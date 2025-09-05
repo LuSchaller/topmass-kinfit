@@ -107,6 +107,7 @@ for process_name in process_names:
     # configuration of colors, labels, etc. can happen here
     if proc.is_mc:
         if proc.name == "qcd_est":
+            proc.label = "Bkg. est."
             proc.color1 = (244, 93, 244)
         elif proc.name == "tt":
             proc.color1 = (244, 182, 66)
@@ -206,7 +207,6 @@ cfg.x.shift_groups = {}
 # selector step groups for conveniently looping over certain steps
 # (used in cutflow tasks)
 cfg.x.selector_step_groups = {
-    "default": ["muon", "jet"],
     "default_Mt": [
         "All",
         "SignalOrBkgTrigger",
@@ -253,23 +253,26 @@ cfg.x.selector_step_groups = {
         "jet",
         "HT",
     ],
-    "default_bkg_n10Chi2": [
-        "All",
-        "n10Chi2",
-        "SignalOrBkgTrigger",
-        "BTag20",
-        "jet",
-        "HT",
-    ],
     "default_bkg_chi2": ["All", "Chi2", "SignalOrBkgTrigger", "BTag20", "jet", "HT"],
     "default_bkg": ["All", "SignalOrBkgTrigger", "BTag20", "jet", "HT"],
+    "default_bkg_alt": ["All", "SignalOrBkgTrigger", "BTag20_alt", "jet", "HT"],
     "trig_eff_ht": ["All", "BaseTrigger", "SixJets", "BTag", "jet"],
     "ht7": ["All", "BaseTrigger", "SixJets", "BTag", "jet"],
+    "ht7_alt": ["All", "BaseTrigger", "BTag_alt", "jet"],
     "trig_eff_ht2": ["All", "BaseTrigger", "BTag", "jet"],
     "trig_eff_pt": ["All", "BaseTrigger", "BTag", "HT"],
     "jet6_pt_5": ["All", "BaseTrigger", "BTag", "HT"],
+    "jet6_pt_5_alt": ["HT", "BTag_alt", "BaseTrigger", "All"],
+    "jet6_pt_5_alt_sig": ["HT", "BTag_alt", "BaseTrigger", "Trigger"],
     "trig_eff_bjet": ["All", "BaseTrigger", "jet", "HT"],
     "trig_eff_ht_pt": ["All", "BaseTrigger", "BTag"],
+    "default": ["Trigger", "HT", "jet", "BTag"],
+    "default_alt": ["Trigger", "HT", "jet", "BTag_alt"],
+    "default_no_ht": ["Trigger", "jet", "BTag"],
+    "default_no_ht_alt": ["Trigger", "jet", "BTag_alt"],
+    "default_no_jet6pt": ["Trigger", "HT", "BTag_no_jet6cut", "jet6"],
+    "default_no_jet6pt_alt": ["Trigger", "HT", "BTag_alt", "jet6"],
+    "default_no_BTag": ["Trigger", "HT", "jet"],
 }
 
 # custom method and sandbox for determining dataset lfns
@@ -309,7 +312,7 @@ cfg.x.btag_working_points = DotDict.wrap(
         },
     },
 )
-cfg.x.fitchi2cut = 10
+cfg.x.fitchi2cut = 6.3
 # JEC uncertainty sources propagated to btag scale factors
 # (names derived from contents in BTV correctionlib file)
 cfg.x.btag_sf_jec_sources = [
@@ -436,6 +439,17 @@ add_shift_aliases(
     },
 )
 
+# cfg.add_shift(name="bkg_up", id=190, type="shape")
+# cfg.add_shift(name="bkg_down", id=191, type="shape")
+# add_shift_aliases(
+#     cfg,
+#     "bkg",
+#     {
+#         "bkg_weight": "bkg_weight_{direction}",
+#     },
+# )
+
+
 # external files
 json_mirror = "/afs/cern.ch/user/m/mrieger/public/mirrors/jsonpog-integration-377439e8"
 year = 2017
@@ -484,6 +498,7 @@ cfg.x.trigger = {
     "tt_fh": [
         "PFHT380_SixPFJet32_DoublePFBTagCSV_2p2",
         "PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2",
+        "PFHT380_SixPFJet32",
     ],
 }
 
@@ -631,8 +646,7 @@ cfg.x.keep_columns = DotDict.wrap(
             "Bjet.*",
             "VetoJet.*",
             "LightJet.*",
-            "JetsByBTag.*",
-            # "EventJet.*",
+            "EventJet.*",
             "Jet.btagDeepFlavB",
             "Jet.hadronFlavour",
             "Muon.pt",
@@ -711,6 +725,7 @@ cfg.x.keep_columns = DotDict.wrap(
 get_shifts = functools.partial(get_shifts_from_sources, cfg)
 cfg.x.event_weights = DotDict(
     {
+        # "bkg_weight": get_shifts("bkg"),
         "normalization_weight": [],
         "btag_weight": [],
         # "trig_weight": [],
@@ -718,7 +733,7 @@ cfg.x.event_weights = DotDict(
         # "muon_weight": get_shifts("mu"),
         "pdf_weight": get_shifts("pdf"),
         "murmuf_weight": get_shifts("murmuf"),
-        "pu_weight": get_shifts("pu_weight_minbias_xs")
+        "pu_weight": get_shifts("pu_weight_minbias_xs"),
     },
 )
 

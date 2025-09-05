@@ -15,10 +15,12 @@ from columnflow.production.normalization import normalization_weights
 from columnflow.production.util import attach_coffea_behavior
 from columnflow.production.cms.gen_top_decay import gen_top_decay_products
 
+
 # from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 
 from alljets.production.KinFit import kinFit
+from alljets.production.bkg_weight import bkg_weights
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -75,6 +77,9 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
         attach_coffea_behavior,
         "HLT.*",
         "Jet.btagDeepFlavB",
+        "n_event_jet",
+        "n_event_bjet",
+        "secmaxbtag_alt",
     },
 )
 def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -108,6 +113,12 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         ak.num(events.Jet.pt, axis=1),
         value_type=np.int32,
     )
+    events = set_ak_column(
+        events,
+        "n_event_jet",
+        ak.num(events.Jet[(abs(events.Jet.eta) < 2.4)].pt, axis=1),
+        value_type=np.int32,
+    )
     wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
     events = set_ak_column(
         events,
@@ -117,18 +128,33 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     )
     events = set_ak_column(
         events,
+        "n_event_bjet",
+        ak.sum((events.Jet[(abs(events.Jet.eta) < 2.4)].btagDeepFlavB >= wp_tight), axis=1),
+        value_type=np.int32,
+    )
+    events = set_ak_column(
+        events,
         "maxbtag",
-        (ak.max(events.Jet.btagDeepFlavB, axis=1)),
+        (ak.max(events.Jet[(abs(events.Jet.eta) < 2.4)].btagDeepFlavB, axis=1)),
     )
     # Insert dummy value for one jet events
-    secmax = ak.sort(events.Jet.btagDeepFlavB, axis=1, ascending=False)
+    sel_jet_mask = (abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40)
+    secmax = ak.sort(
+        (events.Jet[sel_jet_mask])[ak.argsort(events.Jet[sel_jet_mask].pt, axis=1, ascending=False)].btagDeepFlavB,
+        axis=1,
+        ascending=False,
+    )
     empty = ak.singletons(np.full(len(events), EMPTY_FLOAT))
     events = set_ak_column(events, "deltaMt", (events.Mt1 - events.Mt2))
+
     events = set_ak_column(
         events,
         "secmaxbtag",
         (ak.concatenate([secmax, empty, empty], axis=1)[:, 1]),
     )
+    secmax_alt = ak.sort(events.Jet.btagDeepFlavB[sel_jet_mask], axis=1, ascending=False)
+    empty = ak.singletons(np.full(len(events), EMPTY_FLOAT))
+    events = set_ak_column(events, "secmaxbtag_alt", (ak.concatenate([secmax_alt, empty, empty], axis=1)[:, 1]))
     return events
 
 
@@ -154,6 +180,8 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "FitTop1.*",
         "FitTop2.*",
         "FitRbb",
+        "RecoW1", "RecoW2", "RecoTop1", "RecoTop2", "RecoW1mass",
+        "RecoW2mass", "RecoT1mass", "RecoT2mass",
         # "Mt1", "Mt2", "MW1", "MW2", "chi2", "deltaRb",
     },
 )
@@ -161,9 +189,8 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     from alljets.scripts.default import combinationtype
 
     EF = -99999.0
-    kinFit_eventmask = len(events) * [True]
-    kinFit_jetmask = (events[kinFit_eventmask].Jet.pt >= 40.0) & (abs(events[kinFit_eventmask].Jet.eta) < 2.4)
-
+    kinFit_eventmask = (ak.num(events.Jet[(abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40)]) > 5)
+    kinFit_jetmask = ((abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40))
     events = self[kinFit](events, kinFit_jetmask, kinFit_eventmask, **kwargs)
 
     if events.gen_top_decay.ndim > 1:
@@ -213,19 +240,59 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         }
         events = self[attach_coffea_behavior](events, jetcollections, **kwargs)
 
+    fake_jet = events.FitJet[0, 0] * 0
+    fake_jets = ak.Array([fake_jet] * len(events))
+    FitJet_padded = ak.concatenate([
+        events.FitJet,
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None]], axis=1)
+    events_padded = ak.with_field(events, FitJet_padded, "FitJet")
+    events_padded = self[attach_coffea_behavior](events_padded, jetcollections, **kwargs)
     B1 = events.FitJet[:, 0]
-    B2 = events.FitJet[:, 1]
-    W1 = events.FitJet[:, 2].add(events.FitJet[:, 3])
-    W2 = events.FitJet[:, 4].add(events.FitJet[:, 5])
+    B2 = events_padded.FitJet[:, 1]
+    W1 = events_padded.FitJet[:, 2].add(events_padded.FitJet[:, 3])
+    W2 = events_padded.FitJet[:, 4].add(events_padded.FitJet[:, 5])
     Top1 = events.FitJet[:, 0].add(W1)
     Top2 = events.FitJet[:, 1].add(W2)
+    FitJet_reco_padded = ak.concatenate([
+        events.FitJet.reco,
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None],
+        fake_jets[:, None]], axis=1)
+    events_reco_padded = ak.with_field(events, FitJet_reco_padded, "RecoJet")
+    recocollection = {
+        "RecoJet": {
+            "type_name": "Jet",
+            "check_attr": "metric_table",
+            "skip_fields": "",
+        },
+    }
+    events_reco_padded = self[attach_coffea_behavior](events_reco_padded, recocollection, **kwargs)
+    RecoW1 = events_reco_padded.RecoJet[:, 2].add(events_reco_padded.RecoJet[:, 3])
+    RecoW2 = events_reco_padded.RecoJet[:, 4].add(events_reco_padded.RecoJet[:, 5])
+    RecoTop1 = events_reco_padded.RecoJet[:, 0].add(RecoW1)
+    RecoTop2 = events_reco_padded.RecoJet[:, 1].add(RecoW2)
     events = set_ak_column(events, "FitRbb", B1.delta_r(B2))
     events = set_ak_column(events, "FitB1", B1)
     events = set_ak_column(events, "FitB2", B2)
     events = set_ak_column(events, "FitW1", W1)
     events = set_ak_column(events, "FitW2", W2)
     events = set_ak_column(events, "FitTop1", Top1)
+    events = set_ak_column(events, "FitMt1", Top1.mass)
     events = set_ak_column(events, "FitTop2", Top2)
+    events = set_ak_column(events, "RecoW1", W1)
+    events = set_ak_column(events, "RecoW2", W2)
+    events = set_ak_column(events, "RecoTop1", Top1)
+    events = set_ak_column(events, "RecoTop2", Top2)
+    events = set_ak_column(events, "RecoW1mass", RecoW1.mass)
+    events = set_ak_column(events, "RecoW2mass", RecoW2.mass)
+    events = set_ak_column(events, "RecoT1mass", RecoTop1.mass)
+    events = set_ak_column(events, "RecoT2mass", RecoTop2.mass)
 
     return events
 
@@ -295,6 +362,7 @@ def cutflow_features(
         kinFitMatch,
         gen_top_decay_products,
         attach_coffea_behavior,
+        bkg_weights,
     },
     produces={
         features,
@@ -306,11 +374,13 @@ def cutflow_features(
         gen_top_decay_products,
         "gen_top_decay",
         attach_coffea_behavior,
+        bkg_weights,
     },
 )
 def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # attach coffea behavior
     events = self[attach_coffea_behavior](events, **kwargs)
+
     # features
     if not self.dataset_inst.has_tag("has_top"):
         events = set_ak_column(events, "gen_top_decay", False)
@@ -323,6 +393,8 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # deterministic seeds
     events = self[deterministic_seeds](events, **kwargs)
+
+    # events = self[bkg_weights](events, **kwargs)
 
     # mc-only weights
     if self.dataset_inst.is_mc:
@@ -361,6 +433,8 @@ def no_norm(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fake kinfit for trig weights creation
     events = set_ak_column(events, "FitChi2", 0)
+    events = set_ak_column(events, "FitRbb", 0)
+    events = set_ak_column(events, "FitMt1", 0)
     # category ids
     events = self[category_ids](events, **kwargs)
 
@@ -374,12 +448,6 @@ def no_norm(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         events = set_ak_column(
             events,
             "normalization_weight",
-            np.ones(len(events)),
-            value_type=np.float32,
-        )
-        events = set_ak_column(
-            events,
-            "mc_weight",
             np.ones(len(events)),
             value_type=np.float32,
         )
@@ -487,3 +555,72 @@ tt_fh_trigger_prod = trigger_prod.derive(
 # def trig_cats_init(self: Producer) -> None:
 
 #     add_trigger_categories(self.config_inst)
+
+@producer(
+    uses={
+        features,
+        # category_ids,
+        normalization_weights,
+        muon_weights,
+        deterministic_seeds,
+        # kinFitMatch,
+        # gen_top_decay_products,
+        attach_coffea_behavior,
+    },
+    produces={
+        features,
+        # category_ids,
+        normalization_weights,
+        muon_weights,
+        deterministic_seeds,
+        # kinFitMatch,
+        # gen_top_decay_products,
+        # "gen_top_decay",
+        attach_coffea_behavior,
+    },
+)
+def example_no_kinfit(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    # attach coffea behavior
+    events = self[attach_coffea_behavior](events, **kwargs)
+    # features
+    events = self[features](events, **kwargs)
+    # apply kinematic fit
+    # events = self[kinFitMatch](events, **kwargs)
+    # category ids
+    # events = self[category_ids](events, **kwargs)
+
+    # deterministic seeds
+    events = self[deterministic_seeds](events, **kwargs)
+
+    # mc-only weights
+    if self.dataset_inst.is_mc:
+        # normalization weights
+        events = self[normalization_weights](events, **kwargs)
+
+        # muon weights
+        # events = self[muon_weights](events, **kwargs)
+
+    return events
+
+
+@producer(
+    uses={"Jet.pt", "Jet.eta", "Jet.phi", "Jet.btagDeepFlavB"},
+    produces={"n_jet_in_event", "n_bjet_in_event"},
+)
+def njets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
+    events = set_ak_column(
+        events,
+        "n_jet_in_event",
+        ak.num(events.Jet[(abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40)].pt, axis=1),
+        value_type=np.int32,
+    )
+    events = set_ak_column(
+        events,
+        "n_bjet_in_event",
+        ak.num(events.Jet[(abs(events.Jet.eta) < 2.4) &
+                          (events.Jet.pt > 40) &
+                          (events.Jet.btagDeepFlavB >= wp_tight)].pt, axis=1),
+        value_type=np.int32,
+    )
+    return events

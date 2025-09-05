@@ -22,8 +22,8 @@ ak = maybe_import("awkward")
     },
     produces={
         "trig_weight",
-        # "trig_weight_up",
-        # "trig_weight_down",
+        "trig_weight_up",
+        "trig_weight_down",
     },
     # only run on mc
     mc_only=True,
@@ -56,18 +56,20 @@ def trig_weights(
         )[:, 5]
         ht = ak.sum(events.Jet.pt[(events.Jet.pt > 32) & (abs(events.Jet.eta) < 2.6)], axis=1)
         if self.config_inst.x.trigger_sf_variable.startswith("jet6_pt"):
-            weight = self.trig_sf_corrector(jet6_pt)
+            weight = ak.where(jet6_pt == 0, np.zeros((len(events))), self.trig_sf_corrector(jet6_pt))
         if self.config_inst.x.trigger_sf_variable.startswith("ht"):
             weight = self.trig_sf_corrector(ht)
 
+        weight_up = weight + abs(1 - weight)
+        weight_down = ak.where((weight - abs(1 - weight)) > 0, (weight - abs(1 - weight)), 0)
         # store it
         events = set_ak_column(events, "trig_weight", weight, value_type=np.float32)
-        # events = set_ak_column(events, "trig_weight_up", weight_up, value_type=np.float32)
-        # events = set_ak_column(events, "trig_weight_down", weight_down, value_type=np.float32)
+        events = set_ak_column(events, "trig_weight_up", weight_up, value_type=np.float32)
+        events = set_ak_column(events, "trig_weight_down", weight_down, value_type=np.float32)
     else:
         events = set_ak_column(events, "trig_weight", np.ones(len(events)), value_type=np.float32)
-        # events = set_ak_column(events, "trig_weight_up", np.ones(len(events)), value_type=np.float32)
-        # events = set_ak_column(events, "trig_weight_down", np.ones(len(events)), value_type=np.float32)
+        events = set_ak_column(events, "trig_weight_up", np.ones(len(events)), value_type=np.float32)
+        events = set_ak_column(events, "trig_weight_down", np.ones(len(events)), value_type=np.float32)
     return events
 
 
@@ -80,15 +82,15 @@ def trig_weights_requires(self: Producer, task: law.Task, reqs: dict) -> None:
     # reqs["external_files"] = BundleExternalFiles.req(self.task)
     from alljets.tasks.ProduceTriggerWeights import ProduceTriggerWeight
     reqs["external_files"] = ProduceTriggerWeight(
-        version=task.version,
+        version="withbtagalt",  # task.version,
         datasets="tt_fh_powheg,tt_sl_powheg,tt_dl_powheg,data*",
         configs=task.config,
         selector="trigger_eff",
         producers="no_norm,trigger_prod",
         variables=self.config_inst.x.trigger_sf_variable + "-trig_bits",
         hist_producer="trig_all_weights",
-        selector_steps=self.config_inst.x.selector_step_groups[self.config_inst.x.trigger_sf_variable],
-        general_settings="bin_sel=1,unweighted=1",
+        selector_steps=self.config_inst.x.selector_step_groups[self.config_inst.x.trigger_sf_variable + "_alt"],
+        general_settings="bin_sel=1,unweighted=0",
         categories="incl",
     )
 
