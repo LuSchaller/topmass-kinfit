@@ -20,8 +20,8 @@ from columnflow.selection.stats import increment_stats
 from columnflow.util import maybe_import
 
 from alljets.production.example import cutflow_features
-from alljets.selection.jet import jet_selection
 from alljets.production.trig_cor_weight import trig_weights
+from alljets.selection.jet import jet_selection
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -142,8 +142,8 @@ def example(
         results.steps.jet &
         results.steps.Trigger &
         results.steps.BTag &
-        results.steps.HT &  # results.steps.FitChi2 & results.steps.Chi2 &
-        results.steps.SixJets
+        results.steps.HT #&   results.steps.FitChi2 & results.steps.Chi2 &
+        # results.steps.SixJets
     )
     # results.steps.BaseTrigger
 
@@ -156,6 +156,7 @@ def example(
 
         # create process ids
         events = self[process_ids](events, **kwargs)
+
 
         # pdf weights
         events = self[pdf_weights](events, **kwargs)
@@ -283,13 +284,10 @@ def example_trig_weight(
 
     # combined event selection after all steps
     results.event = (
-        results.steps.muon &
         results.steps.jet &
         results.steps.Trigger &
         results.steps.BTag &
-        results.steps.HT &
-        results.steps.n10Chi2 &
-        results.steps.SixJets
+        results.steps.HT 
     )
     # results.steps.BaseTrigger
 
@@ -319,28 +317,35 @@ def example_trig_weight(
         # trigger weight
         events = self[trig_weights](events, **kwargs)
 
+
     # add cutflow features, passing per-object masks
     events = self[cutflow_features](events, results.objects, **kwargs)
+
 
     # increment stats
     weight_map = {
         "num_events": Ellipsis,
         "num_events_selected": results.event,
     }
-    group_map = {}
-    if self.dataset_inst.is_mc:
-        weight_map = {
-            **weight_map,
-            # mc weight for all events
-            "sum_mc_weight": (events.mc_weight, Ellipsis),
-            "sum_mc_weight_selected": (events.mc_weight, results.event),
-            # TODO: Add variations for shifts
-            "sum_mc_weight_pu_weight": (events.mc_weight * events.pu_weight, Ellipsis),
-            "sum_btag_weight": (events.btag_weight, Ellipsis),
-            "sum_btag_weight_selected": (events.btag_weight, results.event),
-            "sum_trig_weight": (events.trig_weight, Ellipsis),
-            "sum_trig_weight_selected": (events.trig_weight, results.event),
-        }
+    for route in sorted(self[btag_weights].produced_columns):
+        weight_name = str(route)
+        if not weight_name.startswith(btag_weights.weight_name):
+            continue
+
+        group_map = {}
+        if self.dataset_inst.is_mc:
+            weight_map = {
+                **weight_map,
+                # mc weight for all events
+                "sum_mc_weight": (events.mc_weight, Ellipsis),
+                "sum_mc_weight_selected": (events.mc_weight, results.event),
+                # TODO: Add variations for shifts
+                "sum_mc_weight_pu_weight": (events.mc_weight * events.pu_weight, Ellipsis),
+                "sum_btag_weight": (events[weight_name], Ellipsis),
+                "sum_btag_weight_selected": (events[weight_name], results.event),
+                "sum_trig_weight": (events.trig_weight, Ellipsis),
+                "sum_trig_weight_selected": (events.trig_weight, results.event),
+            }
         group_map = {
             # per process
             "process": {
@@ -364,10 +369,6 @@ def example_trig_weight(
 
     return events, results
 
-
-# exposed selector for trigger efficiency calculations
-
-
 @selector(
     uses={
         # selectors / producers called within _this_ selector
@@ -383,7 +384,6 @@ def example_trig_weight(
         btag_weights,
         attach_coffea_behavior,
         gen_top_decay_products,
-        # trig_weights,
         "TrigObj*",
     },
     produces={
@@ -397,7 +397,7 @@ def example_trig_weight(
         pu_weight,
         btag_weights,
         gen_top_decay_products,
-        # trig_weights,
+        "trig_weight",
         "HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2",
         "trig_ht",
     },
@@ -458,13 +458,30 @@ def trigger_eff(
     # create process ids
     events = self[process_ids](events, **kwargs)
 
+    events = set_ak_column(
+    events, "trig_weight", np.ones(len(events)), value_type=np.float32,
+    )
+
     # add the mc weight
     if self.dataset_inst.is_mc:
         # events = self[mc_weight](events, **kwargs)
         events = set_ak_column(
             events, "mc_weight", np.ones(len(events)), value_type=np.float32,
         )
-        # events = self[trig_weights](events, **kwargs)
+
+
+        # pdf weights
+        events = self[pdf_weights](events, **kwargs)
+
+        # renormalization/factorization scale weights
+        events = self[murmuf_weights](events, **kwargs)
+
+        # pileup weights
+        events = self[pu_weight](events, **kwargs)
+
+        # btag weights
+        jet_mask = (events.Jet.pt >= 40.0) & (abs(events.Jet.eta) < 2.4)
+        events = self[btag_weights](events, jet_mask=jet_mask, **kwargs)
 
     # add cutflow features, passing per-object masks
     events = self[cutflow_features](events, results.objects, **kwargs)
@@ -480,8 +497,8 @@ def trigger_eff(
             **weight_map,
             "sum_mc_weight": (events.mc_weight, Ellipsis),
             "sum_mc_weight_selected": (events.mc_weight, results.event),
-            # "sum_trig_weight": (events.trig_weight, Ellipsis),
-            # "sum_trig_weight_selected": (events.trig_weight, results.event),
+            "sum_trig_weight": (events.trig_weight, Ellipsis),
+            "sum_trig_weight_selected": (events.trig_weight, results.event),
         }
         group_map = {
             # per process
