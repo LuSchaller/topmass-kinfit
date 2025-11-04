@@ -2,7 +2,6 @@
 
 from columnflow.columnar_util import EMPTY_FLOAT, flat_np_view, set_ak_column
 from columnflow.production import Producer, producer
-
 # from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 
@@ -36,8 +35,11 @@ def kinFit(
     import pyKinFit
 
     sel_events = events[eventmask]
-    sel_Jets = sel_events.Jet[sel_jet_mask]
-    sorted_indices = ak.argsort(sel_Jets.btagDeepFlavB, ascending=False)
+    sel_Jets = sel_events.Jet[sel_jet_mask[eventmask]]
+    wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
+    sorted_indices = ak.where(ak.sum(sel_Jets.btagDeepFlavB >= wp_tight, axis=1) >= 2, ak.argsort(sel_Jets.btagDeepFlavB, ascending=False), ak.argsort(sel_Jets.pt, ascending=False))
+
+    # sorted_indices = ak.argsort(sel_Jets.btagDeepFlavB, ascending=False)
     sorted_jets = sel_Jets[sorted_indices]
     fitPt, fitEta, fitPhi, fitMass, indexlist, fitChi2, fitPgof = pyKinFit.setBestCombi(
         ak.to_list(sorted_jets.pt),
@@ -46,7 +48,7 @@ def kinFit(
         ak.to_list(sorted_jets.mass),
     )
 
-    # function to insert append indices not found in a list yet to a target length
+    # function to append indices not found in a list yet to a target length
     def appendindices(initial_array, target_lengths):
         for i in range(len(initial_array)):
             inner_list = initial_array[i]
@@ -69,12 +71,14 @@ def kinFit(
         original = where[~mask]
         combined = ak.concatenate((original, cut_replaced), axis=1)
         return combined
-
-    lok_ind = ak.local_index(events.Jet)
+    lok_ind = ak.local_index(events.Jet[sel_jet_mask])
     indexmask = appendindices(indexlist, ak.num(lok_ind[eventmask], axis=1))
     combined_indices = insert_at_index(indexmask, lok_ind, eventmask)
-    sorted_reco_indices = ak.argsort(events.Jet.btagDeepFlavB, ascending=False)
-    sorted_reco = events.Jet[sorted_reco_indices]
+    sorted_reco_indices = ak.where(
+        (ak.sum(events.Jet[sel_jet_mask].btagDeepFlavB >= wp_tight, axis=1) >= 2), 
+        ak.argsort(events.Jet[sel_jet_mask].btagDeepFlavB, ascending=False), ak.argsort(events.Jet[sel_jet_mask].pt, ascending=False))
+    # sorted_reco_indices = ak.argsort(events.Jet.btagDeepFlavB, ascending=False)
+    sorted_reco = (events.Jet[sel_jet_mask])[sorted_reco_indices]
     sorted_jet = sorted_reco[combined_indices]
 
     # Take only the first 6 jets per event
