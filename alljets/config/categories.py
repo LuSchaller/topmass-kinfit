@@ -63,13 +63,13 @@ def add_categories(cfg: od.Config) -> None:
         cfg,
         name="fit_conv_leq",
         selection="cat_fit_conv_leq",
-        label="kinfit converged and below chi2 cut",
+        label="kinfit converged and $P_{gof} < 0.1$",
     )
     add_category(
         cfg,
         name="fit_conv_big",
         selection="cat_fit_conv_big",
-        label="kinfit converged and above chi2 cut",
+        label="kinfit converged and $P_{gof} > 0.1$ ",
     )
     add_category(
         cfg,
@@ -86,6 +86,20 @@ def add_categories(cfg: od.Config) -> None:
         tags={"2btj"},
     )
 
+    add_category(
+        cfg,
+        name="fit_matched",
+        selection="cat_fit_matched",
+        label="correctly matched events",
+        tags={"matched"},
+    )
+    add_category(
+        cfg,
+        name="fit_unmatched",
+        selection="cat_fit_unmatched",
+        label="wrong or umatched events",
+        tags={"matched"},
+    )
 #    main_categories = {
 #        # number of jets
 #        "njets": CategoryGroup(["incl", "6j", "7j"], is_complete=True, has_overlap=True),
