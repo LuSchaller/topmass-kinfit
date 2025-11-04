@@ -8,13 +8,12 @@ Column production methods related to higher-level features.
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 from columnflow.production import Producer, producer
 from columnflow.production.categories import category_ids
+from columnflow.production.cms.gen_top_decay import gen_top_decay_products
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.production.normalization import normalization_weights
 from columnflow.production.util import attach_coffea_behavior
-from columnflow.production.cms.gen_top_decay import gen_top_decay_products
-
 # from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 
@@ -154,6 +153,10 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "FitTop1.*",
         "FitTop2.*",
         "FitRbb",
+        "RecoW1.*",
+        "RecoW2.*",
+        "RecoTop1.*",
+        "RecoTop2.*",
         # "Mt1", "Mt2", "MW1", "MW2", "chi2", "deltaRb",
     },
 )
@@ -161,8 +164,8 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     from alljets.scripts.default import combinationtype
 
     EF = -99999.0
-    kinFit_eventmask = len(events) * [True]
-    kinFit_jetmask = (events[kinFit_eventmask].Jet.pt >= 40.0) & (abs(events[kinFit_eventmask].Jet.eta) < 2.4)
+    kinFit_jetmask = (events.Jet.pt >= 40.0) & (abs(events.Jet.eta) < 2.4)
+    kinFit_eventmask = ak.sum(kinFit_jetmask, axis = 1) >= 6
 
     events = self[kinFit](events, kinFit_jetmask, kinFit_eventmask, **kwargs)
 
@@ -219,7 +222,15 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     W2 = events.FitJet[:, 4].add(events.FitJet[:, 5])
     Top1 = events.FitJet[:, 0].add(W1)
     Top2 = events.FitJet[:, 1].add(W2)
+    RecoW1 = events.FitJet.reco[:,2].add(events.FitJet.reco[:,3])
+    RecoW2 = events.FitJet.reco[:,4].add(events.FitJet.reco[:,5])
+    RecoTop1 = events.FitJet.reco[:,0].add(RecoW1)
+    RecoTop2 = events.FitJet.reco[:,1].add(RecoW2)
     events = set_ak_column(events, "FitRbb", B1.delta_r(B2))
+    events = set_ak_column(events, "RecoW1", RecoW1)
+    events = set_ak_column(events, "RecoW2", RecoW2)
+    events = set_ak_column(events, "RecoTop1", RecoTop1)
+    events = set_ak_column(events, "RecoTop2", RecoTop2)
     events = set_ak_column(events, "FitB1", B1)
     events = set_ak_column(events, "FitB2", B2)
     events = set_ak_column(events, "FitW1", W1)
@@ -361,6 +372,8 @@ def no_norm(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # fake kinfit for trig weights creation
     events = set_ak_column(events, "FitChi2", 0)
+    events = set_ak_column(events, "FitPgof", 1)
+    events = set_ak_column(events, "fitCombinationType", 2)
     # category ids
     events = self[category_ids](events, **kwargs)
 
