@@ -66,18 +66,18 @@ def cat_0btj(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, a
     )
 
 
-@categorizer(uses={"FitChi2"})
-def cat_fit_conv_big(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    # kinematic fit has converged and is above chi2 cut (bad events)
-    chi2cut = self.config_inst.x.fitchi2cut
-    return events, (events.FitChi2 < 10000) & (events.FitChi2 > chi2cut)
-
-
-@categorizer(uses={"FitChi2"})
+@categorizer(uses={"FitPgof","FitChi2"})
 def cat_fit_conv_leq(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    # kinematic fit has converged and is below chi2 cut (bad events)
-    chi2cut = self.config_inst.x.fitchi2cut
-    return events, (events.FitChi2 < 10000) & (events.FitChi2 <= chi2cut)
+    # kinematic fit has converged and is below pgof cut (bad events)
+    pgofcut = self.config_inst.x.fitpgofcut
+    return events, (events.FitChi2 < 10000) & (events.FitPgof <= pgofcut)
+
+
+@categorizer(uses={"FitPgof","FitChi2"})
+def cat_fit_conv_big(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # kinematic fit has converged and is above pgof cut (good events)
+    pgofcut = self.config_inst.x.fitpgofcut
+    return events, (events.FitChi2 < 10000) & (events.FitPgof > pgofcut)
 
 
 @categorizer(uses={"FitChi2"})
@@ -88,7 +88,7 @@ def cat_fit_nconv(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arr
 
 @categorizer(uses={"FitChi2"})
 def cat_fit_conv(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    # kinematic fit has not converged
+    # kinematic fit has converged
     return events, (events.FitChi2 < 10000)
 
 
@@ -115,3 +115,13 @@ def cat_0btj_bkg(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Arra
         (events.Jet.pt >= 40.0) &
         (abs(events.Jet.eta) < 2.4) &
         (events.Jet.btagDeepFlavB >= wp_loose), axis=1) == 0))
+
+@categorizer(uses={"fitCombinationType"})
+def cat_fit_matched(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # kinematic fit has not converged
+    return events, (events.fitCombinationType == 2)
+
+@categorizer(uses={"fitCombinationType"})
+def cat_fit_unmatched(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+    # kinematic fit has not converged
+    return events, (events.fitCombinationType != 2)
