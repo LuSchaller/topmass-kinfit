@@ -241,14 +241,15 @@ def add_variables(cfg: od.Config) -> None:
         x_title=r"Jet 6 $p_{T}$",
     )
     add_variable(
-        cfg,
-        name="jet6_pt_5",
-        expression="Jet.pt[:,5]",
-        null_value=EMPTY_FLOAT,
-        binning=[0, 10, 20, 26, 32, 40, 44, 50, 60, 100],
-        unit="GeV",
-        x_title=r"Jet 6 $p_{T}$",
-    )
+            cfg,
+            name="jet6_pt_5",
+            expression="Jet.pt[:,5]",
+            null_value=EMPTY_FLOAT,
+            binning=(40, 0.0, 100.0), # [0, 10, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 45, 48, 52, 60, 70, 80, 100, 200],
+            aux = {"overflow": False, "underflow": False},
+            unit="GeV",
+            x_title=r"Jet 6 $p_{T}$",
+        )
     add_variable(
         cfg,
         name="jet6_pt_6",
@@ -775,10 +776,19 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="fitchi2",
         expression="FitChi2",
-        binning=(100, 0, 200),
+        binning=(100, 0, 100),
         unit="",
-        x_title=r"chi2 from kinfit",
+        x_title=r"$\chi^{2}$ from kinfit",
     )
+    add_variable(
+        cfg,
+        name="fitPgof",
+        expression="FitPgof",
+        binning=(100, 0, 1),
+        unit="",
+        x_title=r"$P_{gof}$ from kinfit",
+    )
+
 
     def build_w1jet(events, which=None):
         events = attach_coffea_behavior(
@@ -801,7 +811,7 @@ def add_variables(cfg: od.Config) -> None:
             return W1jets.energy
         raise ValueError(f"Unknown which: {which}")
 
-    build_w1jet.inputs = ["FitW1.{x,t,y,z}"]
+    build_w1jet.inputs = ["FitW1.{x,y,z,t}"]
 
     add_variable(
         cfg,
@@ -810,9 +820,106 @@ def add_variables(cfg: od.Config) -> None:
         aux={"inputs": build_w1jet.inputs},
         binning=(100, 0, 500),
         unit="GeV",
-        x_title=r"fitted W mass",
+        x_title=r"$m_{W}^{fit}$",
     )
 
+    def build_w1recojet(events, which=None):
+        events = attach_coffea_behavior(
+            events, {"RecoW1": default_coffea_collections["Jet"]},
+        )
+        W1recojets = events.RecoW1
+        if which is None:
+            return W1recojets * 1
+        if which == "mass":
+            return W1recojets.mass
+        if which == "pt":
+            return W1recojets.pt
+        if which == "eta":
+            return W1recojets.eta
+        if which == "abs_eta":
+            return abs(W1recojets.eta)
+        if which == "phi":
+            return W1recojets.phi
+        if which == "energy":
+            return W1recojets.energy
+        raise ValueError(f"Unknown which: {which}")
+
+    build_w1recojet.inputs = ["RecoW1.{x,y,z,t}"]
+
+    add_variable(
+        cfg,
+        name="reco_W1_mass",
+        expression=partial(build_w1recojet, which="mass"),
+        aux={"inputs": build_w1recojet.inputs},
+        binning=(100, 0, 500),
+        unit="GeV",
+        x_title=r"$m_{W_{1}}^{reco}$",
+    )
+
+    def build_w2recojet(events, which=None):
+        events = attach_coffea_behavior(
+            events, {"RecoW2": default_coffea_collections["Jet"]},
+        )
+        W2recojets = events.RecoW2
+        if which is None:
+            return W2recojets * 1
+        if which == "mass":
+            return W2recojets.mass
+        if which == "pt":
+            return W2recojets.pt
+        if which == "eta":
+            return W2recojets.eta
+        if which == "abs_eta":
+            return abs(W2recojets.eta)
+        if which == "phi":
+            return W2recojets.phi
+        if which == "energy":
+            return W2recojets.energy
+        raise ValueError(f"Unknown which: {which}")
+
+    build_w2recojet.inputs = ["RecoW2.{x,y,z,t}"]
+
+    add_variable(
+        cfg,
+        name="reco_W2_mass",
+        expression=partial(build_w2recojet, which="mass"),
+        aux={"inputs": build_w2recojet.inputs},
+        binning=(100, 0, 200),
+        unit="GeV",
+        x_title=r"$m_{W_{2}}^{reco}$",
+    )
+    def build_top1recojet(events, which=None):
+        events = attach_coffea_behavior(
+            events, {"RecoTop1": default_coffea_collections["Jet"]},
+        )
+        Top1recojets = events.RecoTop1
+        if which is None:
+            return Top1recojets * 1
+        if which == "mass":
+            return Top1recojets.mass
+        if which == "pt":
+            return Top1recojets.pt
+        if which == "eta":
+            return Top1recojets.eta
+        if which == "abs_eta":
+            return abs(Top1recojets.eta)
+        if which == "phi":
+            return Top1recojets.phi
+        if which == "energy":
+            return Top1recojets.energy
+        raise ValueError(f"Unknown which: {which}")
+
+    build_top1recojet.inputs = ["RecoTop1.{x,y,z,t}"]
+
+    add_variable(
+        cfg,
+        name="reco_Top1_mass",
+        expression=partial(build_top1recojet, which="mass"),
+        aux={"inputs": build_top1recojet.inputs},
+        binning=(100, 0, 500),
+        unit="GeV",
+        x_title=r"$m_{t}^{reco}$",
+    )
     def build_top1jet(events, which=None):
         events = attach_coffea_behavior(
             events, {"FitTop1": default_coffea_collections["Jet"]},
@@ -843,16 +950,16 @@ def add_variables(cfg: od.Config) -> None:
         aux={"inputs": build_top1jet.inputs},
         binning=(100, 0, 500),
         unit="GeV",
-        x_title=r"fitted Top mass",
+        x_title=r"$m_{t}^{fit}$",
     )
     add_variable(
         cfg,
         name="fit_Top1_mass_1",
         expression=partial(build_top1jet, which="mass"),
         aux={"inputs": build_top1jet.inputs},
-        binning=(40, 100, 500),
+        binning=(100, 130, 500),
         unit="GeV",
-        x_title=r"fitted Top mass",
+        x_title=r"$m_{t}^{fit}$",
     )
     add_variable(
         cfg,
@@ -884,7 +991,16 @@ def add_variables(cfg: od.Config) -> None:
             return B1jets.energy
         raise ValueError(f"Unknown which: {which}")
 
-    build_b1jet.inputs = ["FitB1.{x,t,y,z}"]
+    build_b1jet.inputs = ["FitB1.{pt,eta,phi,mass}"]
+    add_variable(
+        cfg,
+        name="fit_B1_mass_",
+        expression=partial(build_b1jet, which="mass"),
+        aux={"inputs": build_b1jet.inputs},
+        binning=(40, 0, 300),
+        unit="GeV",
+        x_title=r"fitted B1 mass",
+    )
 
     def build_b2jet(events, which=None):
         events = attach_coffea_behavior(
@@ -907,7 +1023,7 @@ def add_variables(cfg: od.Config) -> None:
             return B2jets.energy
         raise ValueError(f"Unknown which: {which}")
 
-    build_b2jet.inputs = ["FitB2.{x,t,y,z}"]
+    build_b2jet.inputs = ["FitB2.{x,y,z,t}"]
 
     add_variable(
         cfg,
