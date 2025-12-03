@@ -86,17 +86,17 @@ def example(self: InferenceModel)-> None:
     #     )
 
     # jet energy correction uncertainty
-    # self.add_parameter(
-    #     "jec",
-    #     process=["TT"],
-    #     type=ParameterType.shape,
-    #     config_data={
-    #         config_inst.name: self.parameter_config_spec(
-    #             shift_source="jec_Total",
-    #             )
-    #     for config_inst in self.config_insts
-    #     },
-    # )
+    self.add_parameter(
+        "jec",
+        process=["TT"],
+        type=ParameterType.shape,
+        config_data={
+            config_inst.name: self.parameter_config_spec(
+                shift_source="jec_Total",
+                )
+        for config_inst in self.config_insts
+        },
+    )
  # Hdamp
     self.add_parameter(
         "hdamp",
