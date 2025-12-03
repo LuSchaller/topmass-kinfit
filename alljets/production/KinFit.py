@@ -99,6 +99,7 @@ def kinFit(
     fitJet_record = ak.with_field(fitJet_record, fitPhi_full[:, :6], "phi")
     fitJet_record = ak.with_field(fitJet_record, fitMass_full[:, :6], "mass")
     events = set_ak_column(events, "FitJet", fitJet_record)
+    # FitJets are in Order (B1,B2,W1Prod1,W1Prod2,W2Prod1,W2Prod2)
     total_chi2 = np.full(len(events), EMPTY_FLOAT)
     total_chi2[eventmask] = ak.Array(fitChi2)
     total_pgof = np.full(len(events), EMPTY_FLOAT)
