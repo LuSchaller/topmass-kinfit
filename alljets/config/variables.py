@@ -954,7 +954,7 @@ def add_variables(cfg: od.Config) -> None:
     )
     add_variable(
         cfg,
-        name="fit_Top1_mass_1",
+        name="fit_Top1_mass_130_500",
         expression=partial(build_top1jet, which="mass"),
         aux={"inputs": build_top1jet.inputs},
         binning=(100, 130, 500),
