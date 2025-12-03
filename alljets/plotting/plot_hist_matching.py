@@ -311,8 +311,6 @@ def plot_hist_chi2cuts(
             "label": f"Number of events",
         },
     }
-    import IPython
-    IPython.embed()
     # setup style config
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
