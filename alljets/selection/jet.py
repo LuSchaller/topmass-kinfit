@@ -15,7 +15,7 @@ ak = maybe_import("awkward")
 @selector(
     uses={"Jet.pt", "Jet.eta", "Jet.btagDeepFlavB",
           "Jet.phi", "Jet.mass", attach_coffea_behavior, "HLT.*",
-          "gen_top_decay", "GenPart.*",
+          "gen_top", "GenPart.*",
           },
     # "Jet.jetId", "Jet.puId", "Jet.genJetIdx", "GenJet.*",
     produces={"MW1", "MW2", "Mt1", "Mt2", "chi2",
@@ -167,12 +167,12 @@ def jet_selection(
         b1, b2 = ak.unzip(ak.unzip(bestcomb)[0])
         j1, j2, j3, j4 = ak.unzip(ak.unzip(bestcomb)[1])
 
-        b1cor = correctcomb[:, 0, 1]
-        q1cor = correctcomb[:, 0, 3]
-        q2cor = correctcomb[:, 0, 4]
-        b2cor = correctcomb[:, 1, 1]
-        q3cor = correctcomb[:, 1, 3]
-        q4cor = correctcomb[:, 1, 4]
+        b1cor = correctcomb.b[:,0]
+        q1cor = correctcomb.w_children[:, 0,0]
+        q2cor = correctcomb.w_children[:, 0, 1]
+        b2cor = correctcomb.b[:,1]
+        q3cor = correctcomb.w_children[:, 1, 0]
+        q4cor = correctcomb.w_children[:, 1, 1]
         drmax = 0.4
         drb11, drb22, drq11 = (dr(b1, b1cor) < drmax), (dr(b2, b2cor) < drmax), (dr(j1, q1cor) < drmax)
         drq22, drq33, drq44 = (dr(j2, q2cor) < drmax), (dr(j3, q3cor) < drmax), (dr(j4, q4cor) < drmax)
@@ -205,7 +205,7 @@ def jet_selection(
 
     if self.dataset_inst.has_tag("has_top"):
         type = np.full((1, ak.num(events, axis=0)), -1)
-        type_unfilled = combinationtype((mt_result[7])[mt_result[6]], events.gen_top_decay[sixjets_sel])
+        type_unfilled = combinationtype((mt_result[7])[mt_result[6]], events.gen_top[sixjets_sel])
         type[0][sixjets_sel] = type_unfilled
         type = ak.flatten(type)
     else:

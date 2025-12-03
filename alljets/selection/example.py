@@ -8,7 +8,7 @@ from collections import defaultdict
 
 from columnflow.columnar_util import set_ak_column
 from columnflow.production.cms.btag import btag_weights
-from columnflow.production.cms.gen_top_decay import gen_top_decay_products
+from columnflow.production.cms.gen_particles import gen_top_lookup
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.pdf import pdf_weights
 from columnflow.production.cms.pileup import pu_weight
@@ -80,7 +80,7 @@ def muon_selection(
         murmuf_weights,
         pu_weight,
         btag_weights,
-        gen_top_decay_products,
+        gen_top_lookup,
     },
     produces={
         # selectors / producers whose newly created columns should be kept
@@ -92,10 +92,10 @@ def muon_selection(
         murmuf_weights,
         pu_weight,
         btag_weights,
-        gen_top_decay_products,
+        gen_top_lookup,
         "HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2",
-        "gen_top_decay.{eta,phi,pt,mass,genPartIdxMother,pdgId,status,statusFlags}",
-        "gen_top_decay",
+        "gen_top.{eta,phi,pt,mass,genPartIdxMother,pdgId,status,statusFlags}",
+        "gen_top",
     },
     exposed=True,
 )
@@ -113,9 +113,9 @@ def example(
 
     # Produce gen_top_decay
     if self.dataset_inst.has_tag("has_top"):
-        events = self[gen_top_decay_products](events, **kwargs)
+        events = self[gen_top_lookup](events, **kwargs)
     else:
-        events = set_ak_column(events, "gen_top_decay", False)
+        events = set_ak_column(events, "gen_top", False)
         events = set_ak_column(events, "GenPart.eta", False)
 
     # ensure trigger columns
@@ -225,7 +225,7 @@ def example(
         pu_weight,
         btag_weights,
         attach_coffea_behavior,
-        gen_top_decay_products,
+        gen_top_lookup,
         trig_weights,
     },
     produces={
@@ -238,10 +238,10 @@ def example(
         murmuf_weights,
         pu_weight,
         btag_weights,
-        gen_top_decay_products,
+        gen_top_lookup,
         trig_weights,
-        "gen_top_decay.{eta,phi,pt,mass,genPartIdxMother,pdgId,status,statusFlags}",
-        "gen_top_decay",
+        "gen_top.*.{eta,phi,pt,mass,pdgId}",
+        "gen_top",
         "HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2",
     },
     exposed=True,
@@ -260,15 +260,15 @@ def example_trig_weight(
 
     # Produce gen_top_decay
     if self.dataset_inst.has_tag("has_top"):
-        events = self[gen_top_decay_products](events, **kwargs)
+        events = self[gen_top_lookup](events, **kwargs)
     else:
-        events = set_ak_column(events, "gen_top_decay", False)
+        events = set_ak_column(events, "gen_top", False)
         events = set_ak_column(events, "GenPart.eta", False)
 
     # ensure trigger columns
     if "PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2" not in ak.fields(events.HLT):
         events = set_ak_column(
-            events, "HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2", False,
+            events, "HLT.PFHT38y0_SixPFJet32_DoublePFBTagDeepCSV_2p2", False,
         )
     #     results += SelectionResult(steps={"missing_whatever": events.HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2})
     # else:
@@ -327,37 +327,38 @@ def example_trig_weight(
         "num_events": Ellipsis,
         "num_events_selected": results.event,
     }
-    for route in sorted(self[btag_weights].produced_columns):
-        weight_name = str(route)
-        if not weight_name.startswith(btag_weights.weight_name):
-            continue
+    group_map = {}
+    if self.dataset_inst.is_mc:
+        for route in sorted(self[btag_weights].produced_columns):
+            weight_name = str(route)
+            if not weight_name.startswith(btag_weights.weight_name):
+                continue
 
-        group_map = {}
-        if self.dataset_inst.is_mc:
-            weight_map = {
-                **weight_map,
-                # mc weight for all events
-                "sum_mc_weight": (events.mc_weight, Ellipsis),
-                "sum_mc_weight_selected": (events.mc_weight, results.event),
-                # TODO: Add variations for shifts
-                "sum_mc_weight_pu_weight": (events.mc_weight * events.pu_weight, Ellipsis),
-                "sum_btag_weight": (events[weight_name], Ellipsis),
-                "sum_btag_weight_selected": (events[weight_name], results.event),
-                "sum_trig_weight": (events.trig_weight, Ellipsis),
-                "sum_trig_weight_selected": (events.trig_weight, results.event),
+            if self.dataset_inst.is_mc:
+                weight_map = {
+                    **weight_map,
+                    # mc weight for all events
+                    "sum_mc_weight": (events.mc_weight, Ellipsis),
+                    "sum_mc_weight_selected": (events.mc_weight, results.event),
+                    # TODO: Add variations for shifts
+                    "sum_mc_weight_pu_weight": (events.mc_weight * events.pu_weight, Ellipsis),
+                    "sum_btag_weight": (events[weight_name], Ellipsis),
+                    "sum_btag_weight_selected": (events[weight_name], results.event),
+                    "sum_trig_weight": (events.trig_weight, Ellipsis),
+                    "sum_trig_weight_selected": (events.trig_weight, results.event),
+                }
+            group_map = {
+                # per process
+                "process": {
+                    "values": events.process_id,
+                    "mask_fn": (lambda v: events.process_id == v),
+                },
+                # per jet multiplicity
+                "njet": {
+                    "values": results.x.n_jets,
+                    "mask_fn": (lambda v: results.x.n_jets == v),
+                },
             }
-        group_map = {
-            # per process
-            "process": {
-                "values": events.process_id,
-                "mask_fn": (lambda v: events.process_id == v),
-            },
-            # per jet multiplicity
-            "njet": {
-                "values": results.x.n_jets,
-                "mask_fn": (lambda v: results.x.n_jets == v),
-            },
-        }
     events, results = self[increment_stats](
         events,
         results,
@@ -383,7 +384,7 @@ def example_trig_weight(
         pu_weight,
         btag_weights,
         attach_coffea_behavior,
-        gen_top_decay_products,
+        gen_top_lookup,
         "TrigObj*",
     },
     produces={
@@ -396,7 +397,7 @@ def example_trig_weight(
         murmuf_weights,
         pu_weight,
         btag_weights,
-        gen_top_decay_products,
+        gen_top_lookup,
         "trig_weight",
         "HLT.PFHT380_SixPFJet32_DoublePFBTagDeepCSV_2p2",
         "trig_ht",
@@ -417,9 +418,9 @@ def trigger_eff(
 
     # Produce gen_top_decay
     if self.dataset_inst.has_tag("has_top"):
-        events = self[gen_top_decay_products](events, **kwargs)
+        events = self[gen_top_lookup](events, **kwargs)
     else:
-        events = set_ak_column(events, "gen_top_decay", False)
+        events = set_ak_column(events, "gen_top", False)
         events = set_ak_column(events, "GenPart.eta", False)
 
     trig_ht = ak.sum(

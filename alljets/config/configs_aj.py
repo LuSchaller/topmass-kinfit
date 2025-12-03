@@ -260,7 +260,7 @@ def add_config(
     # selector step groups for conveniently looping over certain steps
     # (used in cutflow tasks)
     cfg.x.selector_step_groups = {
-        "default": ["muon", "jet"],
+        "default": [],
         "default_Mt": [
             "All",
             "SignalOrBkgTrigger",
@@ -844,8 +844,9 @@ def add_config(
                 "combination_type",
                 "R2b4q",
                 "trig_ht",
-                "gen_top_decay",
-                "gen_top_decay.{eta,phi,pt,mass,genPartIdxMother,pdgId,status,statusFlags}",
+                "gen_top",
+                "gen_top.{eta,phi,pt,mass,genPartIdxMother,pdgId,status,statusFlags}",
+                ColumnCollection.ALL_FROM_SELECTOR,
             },
             "cf.MergeSelectionMasks": {
                 "normalization_weight",
@@ -879,7 +880,7 @@ def add_config(
             "normalization_weight": [],
             # "btag_weight": [],
             # "trig_weight": [],
-            # "trig_weight": get_shifts("trig"),
+             "trig_weight": get_shifts("trig"),
             # "muon_weight": get_shifts("mu"),
             "pdf_weight": get_shifts("pdf"),
             "murmuf_weight": get_shifts("murmuf"),

@@ -8,12 +8,13 @@ Column production methods related to higher-level features.
 from columnflow.columnar_util import EMPTY_FLOAT, Route, set_ak_column
 from columnflow.production import Producer, producer
 from columnflow.production.categories import category_ids
-from columnflow.production.cms.gen_top_decay import gen_top_decay_products
+from columnflow.production.cms.gen_particles import gen_top_lookup
 from columnflow.production.cms.mc_weight import mc_weight
 from columnflow.production.cms.muon import muon_weights
 from columnflow.production.cms.seeds import deterministic_seeds
 from columnflow.production.normalization import normalization_weights
 from columnflow.production.util import attach_coffea_behavior
+from columnflow.columnar_util import attach_coffea_behavior as attach_coffea_behavior_fn
 # from columnflow.selection.util import create_collections_from_masks
 from columnflow.util import maybe_import
 
@@ -142,7 +143,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         attach_coffea_behavior,
         "Jet.btagDeepFlavB",
         kinFit,
-        "gen_top_decay",
+        "gen_top",
     },
     produces={
         # new columns
@@ -169,7 +170,8 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[kinFit](events, kinFit_jetmask, kinFit_eventmask, **kwargs)
 
-    if events.gen_top_decay.ndim > 1:
+    import IPython
+    if events.gen_top.ndim > 1:
         jetcollections = {
             "FitJet": {
                 "type_name": "Jet",
@@ -181,13 +183,23 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                 "check_attr": "metric_table",
                 "skip_fields": "",
             },
-            "gen_top_decay": {
-                "type_name": "Jet",
-                "check_attr": "metric_table",
-                "skip_fields": "",
-            },
         }
         events = self[attach_coffea_behavior](events, jetcollections, **kwargs)
+        gen_top = attach_coffea_behavior_fn(events.gen_top, collections={
+    "b": {
+        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+    },
+    "t": {
+        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+    },
+    "w": {
+        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+    },
+    "w_children": {
+        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+    },
+})
+        # IPython.embed()
         fitcomb = combinationtype(
             events.FitJet.reco[kinFit_eventmask][:, 0],
             events.FitJet.reco[kinFit_eventmask][:, 1],
@@ -195,7 +207,7 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             events.FitJet.reco[kinFit_eventmask][:, 3],
             events.FitJet.reco[kinFit_eventmask][:, 4],
             events.FitJet.reco[kinFit_eventmask][:, 5],
-            events.gen_top_decay[kinFit_eventmask],
+            gen_top[kinFit_eventmask],
         )
         full_fitcomb = np.full(len(events), EF)
         full_fitcomb[kinFit_eventmask] = fitcomb
@@ -304,7 +316,7 @@ def cutflow_features(
         muon_weights,
         deterministic_seeds,
         kinFitMatch,
-        gen_top_decay_products,
+        gen_top_lookup,
         attach_coffea_behavior,
     },
     produces={
@@ -314,8 +326,8 @@ def cutflow_features(
         muon_weights,
         deterministic_seeds,
         kinFitMatch,
-        gen_top_decay_products,
-        "gen_top_decay",
+        gen_top_lookup,
+        "gen_top",
         attach_coffea_behavior,
     },
 )
@@ -324,7 +336,7 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = self[attach_coffea_behavior](events, **kwargs)
     # features
     if not self.dataset_inst.has_tag("has_top"):
-        events = set_ak_column(events, "gen_top_decay", False)
+        events = set_ak_column(events, "gen_top", False)
 
     events = self[features](events, **kwargs)
     # apply kinematic fit
@@ -367,7 +379,7 @@ def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 def no_norm(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     # features
     if not self.dataset_inst.has_tag("has_top"):
-        events = set_ak_column(events, "gen_top_decay", False)
+        events = set_ak_column(events, "gen_top", False)
     events = self[features](events, **kwargs)
 
     # fake kinfit for trig weights creation
