@@ -170,7 +170,6 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     events = self[kinFit](events, kinFit_jetmask, kinFit_eventmask, **kwargs)
 
-    import IPython
     if events.gen_top.ndim > 1:
         jetcollections = {
             "FitJet": {
@@ -199,7 +198,6 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
     },
 })
-        # IPython.embed()
         fitcomb = combinationtype(
             events.FitJet.reco[kinFit_eventmask][:, 0],
             events.FitJet.reco[kinFit_eventmask][:, 1],
