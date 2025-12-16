@@ -5,7 +5,7 @@ Definition of categories.
 """
 
 import order as od
-from columnflow.config_util import add_category, create_category_combinations, CategoryGroup
+from columnflow.config_util import add_category  # , create_category_combinations, CategoryGroup
 
 
 # add categories using the "add_category" tool which adds auto-generated ids
@@ -63,7 +63,7 @@ def add_categories(cfg: od.Config) -> None:
         cfg,
         name="fit_conv_leq",
         selection="cat_fit_conv_leq",
-        label="kinfit converged and $P_{gof} < 0.1$",
+        label=r"below $\chi^2$ cut",
     )
     add_category(
         cfg,
@@ -73,17 +73,35 @@ def add_categories(cfg: od.Config) -> None:
     )
     add_category(
         cfg,
-        name="bkg",
+        name="0btj_bkg",
         selection="cat_0btj_bkg",
         label="QCD estimation",
         tags={"0btj"},
     )
     add_category(
         cfg,
-        name="sig",
+        name="2btj_sig",
         selection="cat_2btj_sig",
         label=">2 b-tagged jets & signal trigger",
         tags={"2btj"},
+    )
+    add_category(
+        cfg,
+        name="fit_conv_leq_rbb",
+        selection="cat_fit_conv_leq_rbb",
+        label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
+    )
+    add_category(
+        cfg,
+        name="fit_rbb",
+        selection="cat_rbb",
+        label=r"above $\Delta R_{\text{b}}$ cut",
+    )
+    add_category(
+        cfg,
+        name="reco_sig",
+        selection="cat_reco_sig",
+        label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
     )
 
     add_category(

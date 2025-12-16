@@ -14,8 +14,6 @@ from columnflow.util import maybe_import
 from alljets.plotting.aj_plot_all import aj_plot_all
 from columnflow.plotting.plot_util import (
     prepare_style_config,
-    remove_residual_axis,
-    apply_process_settings,
     apply_variable_settings,
     apply_density,
 )
@@ -62,10 +60,10 @@ def plot_hist_matching(
             tt_index = i
         elif ((list(keys)[i] == "qcd")):
             qcd_index = i
-            label = f"QCD"
+            label = "QCD"
         elif ((list(keys)[i] == "qcd_est")):
             qcd_index = i
-            label = f"Bkg. estimation"
+            label = "Bkg. estimation"
         else:
             data_index = i
 
@@ -74,27 +72,34 @@ def plot_hist_matching(
     # hists = apply_process_settings(hists, process_settings)
     hists = apply_density(hists, density)
     plot_config = OrderedDict()
-    norm = np.ones_like(hists[0][list(hists[0].keys())[2]][0, :, 3].values())
+    # norm = np.ones_like(hists[0][list(hists[0].keys())[2]][0, :, 3].values())
     # for updating labels of individual selector steps
 
-    plot_config[f"hist_qcd"] = {
+    plot_config["hist_qcd"] = {
         "method": "draw_hist",
         "ratio_method": "draw_stat_error_bands",
-        "hist": hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] + hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
+        "hist": hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
         "kwargs": {
             "color": "#5790fc",
             "histtype": "fill",
             "label": label,
         },
         "ratio_kwargs": {
-            "norm": (hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] + hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1]).values(),
+            "norm": (hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 1]).values(),
         },
     }
-    
 
     plot_config["hist_wrong"] = {
         "method": "draw_hist",
-        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
+        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
         "kwargs": {
             "color": "#f08181",
             "histtype": "fill",
@@ -111,7 +116,6 @@ def plot_hist_matching(
             "label": f"{list(hists[0].keys())[tt_index].name}, unmatched",
         },
     }
-    
     plot_config["hist_correct"] = {
         "method": "draw_hist",
         "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3],
@@ -121,7 +125,7 @@ def plot_hist_matching(
             "label": f"{list(hists[0].keys())[tt_index].name}, correct",
         },
     }
-    plot_config[f"hist_data"] = {
+    plot_config["hist_data"] = {
         "method": "draw_errorbars",
         "ratio_method": "draw_errorbars",
         "hist": hists[0][list(hists[0].keys())[data_index]][0, :, sum],
@@ -130,22 +134,26 @@ def plot_hist_matching(
         },
         "ratio_kwargs": {
             # "linestyle": "none",
-            "norm": (hists[0][list(hists[0].keys())[qcd_index]][0, :, 1] + hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1]).values(),
+            "norm": (hists[0][list(hists[0].keys())[qcd_index]][0, :, 1] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+                     hists[0][list(hists[0].keys())[tt_index]][0, :, 1]).values(),
         },
     }
 
-    plot_config[f"hist_total_uncert"] = {
+    plot_config["hist_total_uncert"] = {
         "method": "draw_stat_error_bands",
-        "hist": hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] + hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
+        "hist": hists[0][list(hists[0].keys())[qcd_index]][0, :, sum] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
     }
 
     # setup style config
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    # plot-function specific changes
-    # default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
-    # default_style_config["legend_cfg"]["title"] = trigger_names[eff_bin]
+
     default_style_config["legend_cfg"]["ncol"] = 1
     default_style_config["legend_cfg"]["title_fontsize"] = 24
     default_style_config["legend_cfg"]["fontsize"] = 20
@@ -172,26 +180,24 @@ def plot_hist_matching_MC(
 ) -> plt.Figure:
     """
     Matching for MC only
-    
     """
-    n_processes = len(list(hists.keys()))
+
     keys = hists.keys()
     for i in range(len(list(keys))):
         if list(keys)[i] == "tt":
             tt_index = i
 
-
     variable_inst = variable_insts[0]
     hists = apply_variable_settings(hists, variable_insts, variable_settings)
-    # hists = apply_process_settings(hists, process_settings)
     hists = apply_density(hists, density)
     plot_config = OrderedDict()
     # for updating labels of individual selector steps
-    
 
     plot_config["hist_wrong"] = {
         "method": "draw_hist",
-        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
+        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
         "kwargs": {
             "color": "#f08181",
             "histtype": "fill",
@@ -208,7 +214,7 @@ def plot_hist_matching_MC(
             "label": f"{list(hists[0].keys())[tt_index].name}, unmatched",
         },
     }
-    
+
     plot_config["hist_correct"] = {
         "method": "draw_hist",
         "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3],
@@ -219,18 +225,18 @@ def plot_hist_matching_MC(
         },
     }
 
-    plot_config[f"hist_total_uncert"] = {
+    plot_config["hist_total_uncert"] = {
         "method": "draw_stat_error_bands",
-        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] + hists[0][list(hists[0].keys())[tt_index]][0, :, 2] + hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
+        "hist": hists[0][list(hists[0].keys())[tt_index]][0, :, 3] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 2] +
+        hists[0][list(hists[0].keys())[tt_index]][0, :, 1],
     }
 
     # setup style config
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,
     )
-    # plot-function specific changes
-    # default_style_config["ax_cfg"]["ylabel"] = "Efficiency"
-    # default_style_config["legend_cfg"]["title"] = trigger_names[eff_bin]
+
     default_style_config["legend_cfg"]["ncol"] = 1
     default_style_config["legend_cfg"]["title_fontsize"] = 24
     default_style_config["legend_cfg"]["fontsize"] = 20
@@ -239,6 +245,7 @@ def plot_hist_matching_MC(
     style_config = law.util.merge_dicts(default_style_config, style_config, deep=True)
 
     return aj_plot_all(plot_config, style_config, **kwargs)
+
 
 def plot_hist_chi2cuts(
     hists: OrderedDict,
@@ -255,14 +262,12 @@ def plot_hist_chi2cuts(
 ) -> plt.Figure:
     """
     Matching for MC only
-    
     """
-    n_processes = len(list(hists.keys()))
+
     keys = hists.keys()
     for i in range(len(list(keys))):
         if list(keys)[i] == "tt":
             tt_index = i
-
 
     variable_inst = variable_insts[0]
     hists = apply_variable_settings(hists, variable_insts, variable_settings)
@@ -301,16 +306,17 @@ def plot_hist_chi2cuts(
             "error_type": "variance",
             "norm": cumulative_hist_tot.values(),
             "color": "#380000",
-            "label": f"Fraction of correct assignments",
+            "label": "Fraction of correct assignments",
         },
     }
     plot_config["hist_twin"] = {
         "method": "draw_hist_twin",
         "hist": cumulative_hist_tot,
         "kwargs": {
-            "label": f"Number of events",
+            "label": "Number of events",
         },
     }
+
     # setup style config
     default_style_config = prepare_style_config(
         config_inst, category_inst, variable_inst, density, shape_norm, yscale,

@@ -288,6 +288,8 @@ def example_trig_weight(
         results.steps.Trigger &
         results.steps.BTag &
         results.steps.HT 
+        #TOM: results.steps.n5Chi2 &
+        #TOM: results.steps.SixJets
     )
     # results.steps.BaseTrigger
 
@@ -469,7 +471,6 @@ def trigger_eff(
         events = set_ak_column(
             events, "mc_weight", np.ones(len(events)), value_type=np.float32,
         )
-
 
         # pdf weights
         events = self[pdf_weights](events, **kwargs)

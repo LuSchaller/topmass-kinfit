@@ -33,14 +33,18 @@ def kinFit(
     **kwargs,
 ) -> ak.Array:
     import pyKinFit
-
     sel_events = events[eventmask]
     sel_Jets = sel_events.Jet[sel_jet_mask[eventmask]]
     wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
-    sorted_indices = ak.where(ak.sum(sel_Jets.btagDeepFlavB >= wp_tight, axis=1) >= 2, ak.argsort(sel_Jets.btagDeepFlavB, ascending=False), ak.argsort(sel_Jets.pt, ascending=False))
 
     # sorted_indices = ak.argsort(sel_Jets.btagDeepFlavB, ascending=False)
     sorted_jets = sel_Jets[sorted_indices]
+    # wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
+    sorted_indices = ak.where(
+        ak.num(sel_Jets.btagDeepFlavB, axis=1) >= 2,
+        ak.argsort(sel_Jets.btagDeepFlavB, ascending=False),
+        ak.argsort(sel_Jets.pt, ascending=False),
+    )
     fitPt, fitEta, fitPhi, fitMass, indexlist, fitChi2, fitPgof = pyKinFit.setBestCombi(
         ak.to_list(sorted_jets.pt),
         ak.to_list(sorted_jets.eta),
@@ -75,9 +79,11 @@ def kinFit(
     indexmask = appendindices(indexlist, ak.num(lok_ind[eventmask], axis=1))
     combined_indices = insert_at_index(indexmask, lok_ind, eventmask)
     sorted_reco_indices = ak.where(
-        (ak.sum(events.Jet[sel_jet_mask].btagDeepFlavB >= wp_tight, axis=1) >= 2), 
-        ak.argsort(events.Jet[sel_jet_mask].btagDeepFlavB, ascending=False), ak.argsort(events.Jet[sel_jet_mask].pt, ascending=False))
-    # sorted_reco_indices = ak.argsort(events.Jet.btagDeepFlavB, ascending=False)
+        ak.num(events.Jet[sel_jet_mask].btagDeepFlavB, axis=1) >= 2,
+        ak.argsort(events.Jet[sel_jet_mask].btagDeepFlavB, ascending=False),
+        ak.argsort(events.Jet[sel_jet_mask].pt, ascending=False),
+    )
+    # sorted_reco_indices = ak.argsort(events.Jet[sel_jet_mask].btagDeepFlavB, ascending=False)
     sorted_reco = (events.Jet[sel_jet_mask])[sorted_reco_indices]
     sorted_jet = sorted_reco[combined_indices]
 
