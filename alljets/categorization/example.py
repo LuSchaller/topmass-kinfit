@@ -146,17 +146,17 @@ def cat_fit_unmatched(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak
     # kinematic fit has not converged
     return events, (events.fitCombinationType != 2)
 
-@categorizer(uses={"Jet.pt", "Jet.btagDeepFlavB", "Jet.eta", "HLT.*", "deltaRb", "chi2"})
-def cat_reco_sig(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
-    # two or more b-jets
-    chi2cut = self.config_inst.x.fitchi2cut
-    wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
-    signal_trigger = self.config_inst.x.trigger["tt_fh"][0]
-    return events, (events.HLT[signal_trigger] &
-                    (events.deltaRb > 2.0) &
-                    (events.chi2 <= chi2cut) &
-                    (ak.sum(
-                        (events.Jet.pt >= 40.0) &
-                        (abs(events.Jet.eta) < 2.4) &
-                        (events.Jet.btagDeepFlavB >= wp_tight), axis=1,
-                    ) >= 2))
+# @categorizer(uses={"Jet.pt", "Jet.btagDeepFlavB", "Jet.eta", "HLT.*", "deltaRb", "chi2"})
+# def cat_reco_sig(self: Categorizer, events: ak.Array, **kwargs) -> tuple[ak.Array, ak.Array]:
+#     # two or more b-jets
+#     chi2cut = self.config_inst.x.fitchi2cut
+#     wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
+#     signal_trigger = self.config_inst.x.trigger["tt_fh"][0]
+#     return events, (events.HLT[signal_trigger] &
+#                     (events.deltaRb > 2.0) &
+#                     (events.chi2 <= chi2cut) &
+#                     (ak.sum(
+#                         (events.Jet.pt >= 40.0) &
+#                         (abs(events.Jet.eta) < 2.4) &
+#                         (events.Jet.btagDeepFlavB >= wp_tight), axis=1,
+#                     ) >= 2))

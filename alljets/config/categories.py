@@ -98,12 +98,12 @@ def add_categories(cfg: od.Config) -> None:
     #     selection="cat_rbb",
     #     label=r"above $\Delta R_{\text{b}}$ cut",
     # )
-    add_category(
-        cfg,
-        name="reco_sig",
-        selection="cat_reco_sig",
-        label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
-    )
+    # add_category(
+    #     cfg,
+    #     name="reco_sig",
+    #     selection="cat_reco_sig",
+    #     label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
+    # )
 
     add_category(
         cfg,
