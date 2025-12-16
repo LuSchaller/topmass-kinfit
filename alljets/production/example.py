@@ -19,7 +19,6 @@ from columnflow.columnar_util import attach_coffea_behavior as attach_coffea_beh
 from columnflow.util import maybe_import
 
 from alljets.production.KinFit import kinFit
-from alljets.production.bkg_weight import bkg_weights
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -331,7 +330,6 @@ def cutflow_features(
         kinFitMatch,
         gen_top_lookup,
         attach_coffea_behavior,
-        bkg_weights,
     },
     produces={
         features,
@@ -343,7 +341,6 @@ def cutflow_features(
         gen_top_lookup,
         "gen_top",
         attach_coffea_behavior,
-        bkg_weights,
     },
 )
 def example(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
