@@ -38,13 +38,13 @@ def kinFit(
     wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
 
     # sorted_indices = ak.argsort(sel_Jets.btagDeepFlavB, ascending=False)
-    sorted_jets = sel_Jets[sorted_indices]
     # wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
     sorted_indices = ak.where(
         ak.num(sel_Jets.btagDeepFlavB, axis=1) >= 2,
         ak.argsort(sel_Jets.btagDeepFlavB, ascending=False),
         ak.argsort(sel_Jets.pt, ascending=False),
     )
+    sorted_jets = sel_Jets[sorted_indices]
     fitPt, fitEta, fitPhi, fitMass, indexlist, fitChi2, fitPgof = pyKinFit.setBestCombi(
         ak.to_list(sorted_jets.pt),
         ak.to_list(sorted_jets.eta),
@@ -91,13 +91,17 @@ def kinFit(
     sorted_jets_top6 = sorted_jet[:, :6]
     # Convert your Python lists to awkward arrays
     fitPt_ak = ak.Array(fitPt)
-    fitPt_full = insert_at_index(fitPt_ak[:, :6], sorted_jets_top6.pt, eventmask)
+    fitPt_full = insert_at_index(
+        fitPt_ak[:, :6], sorted_jets_top6.pt, eventmask)
     fitEta_ak = ak.Array(fitEta)
-    fitEta_full = insert_at_index(fitEta_ak[:, :6], sorted_jets_top6.eta, eventmask)
+    fitEta_full = insert_at_index(
+        fitEta_ak[:, :6], sorted_jets_top6.eta, eventmask)
     fitPhi_ak = ak.Array(fitPhi)
-    fitPhi_full = insert_at_index(fitPhi_ak[:, :6], sorted_jets_top6.phi, eventmask)
+    fitPhi_full = insert_at_index(
+        fitPhi_ak[:, :6], sorted_jets_top6.phi, eventmask)
     fitMass_ak = ak.Array(fitMass)
-    fitMass_full = insert_at_index(fitMass_ak[:, :6], sorted_jets_top6.mass, eventmask)
+    fitMass_full = insert_at_index(
+        fitMass_ak[:, :6], sorted_jets_top6.mass, eventmask)
     # Create FitJet collection for the selected events with fit values
     fitJet_record = ak.Array({"reco": sorted_jets_top6})
     fitJet_record = ak.with_field(fitJet_record, fitPt_full[:, :6], "pt")
