@@ -142,7 +142,7 @@ def example(
         results.steps.jet &
         results.steps.Trigger &
         results.steps.BTag &
-        results.steps.HT #&   results.steps.FitChi2 & results.steps.Chi2 &
+        results.steps.HT  # &   results.steps.FitChi2 & results.steps.Chi2 &
         # results.steps.SixJets
     )
     # results.steps.BaseTrigger
@@ -156,7 +156,6 @@ def example(
 
         # create process ids
         events = self[process_ids](events, **kwargs)
-
 
         # pdf weights
         events = self[pdf_weights](events, **kwargs)
@@ -287,9 +286,9 @@ def example_trig_weight(
         results.steps.jet &
         results.steps.Trigger &
         results.steps.BTag &
-        results.steps.HT 
-        #TOM: results.steps.n5Chi2 &
-        #TOM: results.steps.SixJets
+        results.steps.HT
+        # TOM: results.steps.n5Chi2 &
+        # TOM: results.steps.SixJets
     )
     # results.steps.BaseTrigger
 
@@ -319,10 +318,8 @@ def example_trig_weight(
         # trigger weight
         events = self[trig_weights](events, **kwargs)
 
-
     # add cutflow features, passing per-object masks
     events = self[cutflow_features](events, results.objects, **kwargs)
-
 
     # increment stats
     weight_map = {
@@ -371,6 +368,7 @@ def example_trig_weight(
     )
 
     return events, results
+
 
 @selector(
     uses={
@@ -462,7 +460,7 @@ def trigger_eff(
     events = self[process_ids](events, **kwargs)
 
     events = set_ak_column(
-    events, "trig_weight", np.ones(len(events)), value_type=np.float32,
+        events, "trig_weight", np.ones(len(events)), value_type=np.float32,
     )
 
     # add the mc weight

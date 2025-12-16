@@ -3,10 +3,10 @@
 Jet selection methods.
 """
 
-from columnflow.selection import Selector, SelectionResult, selector
-from columnflow.util import maybe_import
-from columnflow.production.util import attach_coffea_behavior
 from columnflow.columnar_util import set_ak_column, sorted_indices_from_mask
+from columnflow.production.util import attach_coffea_behavior
+from columnflow.selection import SelectionResult, Selector, selector
+from columnflow.util import maybe_import
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")

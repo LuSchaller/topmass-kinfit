@@ -127,18 +127,21 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(
         events,
         "n_event_bjet",
-        ak.sum((events.Jet[(abs(events.Jet.eta) < 2.4)].btagDeepFlavB >= wp_tight), axis=1),
+        ak.sum((events.Jet[(abs(events.Jet.eta) < 2.4)
+                           ].btagDeepFlavB >= wp_tight), axis=1),
         value_type=np.int32,
     )
     events = set_ak_column(
         events,
         "maxbtag",
-        (ak.max(events.Jet[(abs(events.Jet.eta) < 2.4)].btagDeepFlavB, axis=1)),
+        (ak.max(events.Jet[(abs(events.Jet.eta) < 2.4)
+                           ].btagDeepFlavB, axis=1)),
     )
     # Insert dummy value for one jet events
     sel_jet_mask = (abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40)
     secmax = ak.sort(
-        (events.Jet[sel_jet_mask])[ak.argsort(events.Jet[sel_jet_mask].pt, axis=1, ascending=False)].btagDeepFlavB,
+        (events.Jet[sel_jet_mask])[ak.argsort(
+            events.Jet[sel_jet_mask].pt, axis=1, ascending=False)].btagDeepFlavB,
         axis=1,
         ascending=False,
     )
@@ -150,9 +153,11 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "secmaxbtag",
         (ak.concatenate([secmax, empty, empty], axis=1)[:, 1]),
     )
-    secmax_alt = ak.sort(events.Jet.btagDeepFlavB[sel_jet_mask], axis=1, ascending=False)
+    secmax_alt = ak.sort(
+        events.Jet.btagDeepFlavB[sel_jet_mask], axis=1, ascending=False)
     empty = ak.singletons(np.full(len(events), EMPTY_FLOAT))
-    events = set_ak_column(events, "secmaxbtag_alt", (ak.concatenate([secmax_alt, empty, empty], axis=1)[:, 1]))
+    events = set_ak_column(events, "secmaxbtag_alt", (ak.concatenate(
+        [secmax_alt, empty, empty], axis=1)[:, 1]))
     return events
 
 
@@ -177,11 +182,7 @@ def features(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         "FitW2.*",
         "FitTop1.*",
         "FitTop2.*",
-        "FitRbb",
-        "RecoW1.*",
-        "RecoW2.*",
-        "RecoTop1.*",
-        "RecoTop2.*",
+        # "FitRbb",
         # "Mt1", "Mt2", "MW1", "MW2", "chi2", "deltaRb",
     },
 )
@@ -190,7 +191,7 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     EF = -99999.0
     kinFit_jetmask = (events.Jet.pt >= 40.0) & (abs(events.Jet.eta) < 2.4)
-    kinFit_eventmask = ak.sum(kinFit_jetmask, axis = 1) >= 6
+    kinFit_eventmask = ak.sum(kinFit_jetmask, axis=1) >= 6
     events = self[kinFit](events, kinFit_jetmask, kinFit_eventmask, **kwargs)
 
     if events.gen_top.ndim > 1:
@@ -208,19 +209,19 @@ def kinFitMatch(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
         }
         events = self[attach_coffea_behavior](events, jetcollections, **kwargs)
         gen_top = attach_coffea_behavior_fn(events.gen_top, collections={
-    "b": {
-        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
-    },
-    "t": {
-        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
-    },
-    "w": {
-        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
-    },
-    "w_children": {
-        "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
-    },
-})
+            "b": {
+                "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+            },
+            "t": {
+                "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+            },
+            "w": {
+                "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+            },
+            "w_children": {
+                "type_name": "GenParticle", "check_attr": "metric_table", "skip_fields": "*Idx*G",
+            },
+        })
         fitcomb = combinationtype(
             events.FitJet.reco[kinFit_eventmask][:, 0],
             events.FitJet.reco[kinFit_eventmask][:, 1],
@@ -310,7 +311,8 @@ def cutflow_features(
         "cutflow.jet1_pt",
         Route("Jet.pt[:,0]").apply(events, EMPTY_FLOAT),
     )
-    events = set_ak_column(events, "cutflow.n_jet", ak.num(events.Jet.pt, axis=1))
+    events = set_ak_column(events, "cutflow.n_jet",
+                           ak.num(events.Jet.pt, axis=1))
     wp_tight = self.config_inst.x.btag_working_points.deepjet.tight
     events = set_ak_column(
         events,
@@ -444,7 +446,8 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
             trig_passed = ak.singletons(
                 ak.flatten(
                     ak.nan_to_none(
-                        ak.unzip(ak.where(events.HLT[trigger], id, np.float64(np.nan))),
+                        ak.unzip(
+                            ak.where(events.HLT[trigger], id, np.float64(np.nan))),
                     ),
                 ),
             )
@@ -453,7 +456,8 @@ def trigger_prod(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
                     ak.nan_to_none(
                         ak.where(
                             ak.singletons(ak.flatten(ak.unzip(events.HLT[ref_trig]))) &
-                            ak.singletons(ak.flatten(ak.unzip(events.HLT[trigger]))),
+                            ak.singletons(ak.flatten(
+                                ak.unzip(events.HLT[trigger]))),
                             id,
                             np.float64(np.nan),
                         ),
@@ -579,7 +583,8 @@ def njets(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
     events = set_ak_column(
         events,
         "n_jet_in_event",
-        ak.num(events.Jet[(abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 40)].pt, axis=1),
+        ak.num(events.Jet[(abs(events.Jet.eta) < 2.4)
+               & (events.Jet.pt > 40)].pt, axis=1),
         value_type=np.int32,
     )
     events = set_ak_column(

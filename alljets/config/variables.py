@@ -641,7 +641,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="ht9",
         expression="ht",
-        binning=[250, 300, 350, 400, 450, 500, 550, 600, 700, 800, 1000, 1250, 1500],
+        binning=[250, 300, 350, 400, 450, 500,
+                 550, 600, 700, 800, 1000, 1250, 1500],
         aux={"overflow": False, "underflow": False},
         unit="GeV",
         x_title="$H_T$",
@@ -650,7 +651,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="ht5",
         expression="ht",
-        binning=[0, 240, 300, 350, 400, 450, 500, 550, 600, 700, 800, 900, 1000, 1250, 1750, 2500],
+        binning=[0, 240, 300, 350, 400, 450, 500, 550,
+                 600, 700, 800, 900, 1000, 1250, 1750, 2500],
         unit="GeV",
         x_title="$H_T$",
     )
@@ -698,7 +700,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="ht8",
         expression="ht",
-        binning=[0, 100, 150, 200, 300, 340, 380, 415, 450, 500, 700, 1000, 1500],
+        binning=[0, 100, 150, 200, 300, 340,
+                 380, 415, 450, 500, 700, 1000, 1500],
         unit="GeV",
         x_title="$H_T$",
     )
@@ -1234,7 +1237,6 @@ def add_variables(cfg: od.Config) -> None:
         x_title=r"$P_{gof}$ from kinfit",
     )
 
-
     def build_w1jet(events, which=None):
         events = attach_coffea_behavior(
             events, {"FitW1": default_coffea_collections["Jet"]},
@@ -1333,6 +1335,7 @@ def add_variables(cfg: od.Config) -> None:
         unit="GeV",
         x_title=r"$m_{W_{2}}^{reco}$",
     )
+
     def build_top1recojet(events, which=None):
         events = attach_coffea_behavior(
             events, {"RecoTop1": default_coffea_collections["Jet"]},
@@ -1365,6 +1368,7 @@ def add_variables(cfg: od.Config) -> None:
         unit="GeV",
         x_title=r"$m_{t}^{reco}$",
     )
+
     def build_top1jet(events, which=None):
         events = attach_coffea_behavior(
             events, {"FitTop1": default_coffea_collections["Jet"]},
@@ -1923,7 +1927,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="vcoarse_fitreco_W1_mass",
         expression="RecoW1mass",
-        aux={"inputs": build_w1jet.inputs, "overflow": False, "underflow": False},
+        aux={"inputs": build_w1jet.inputs,
+             "overflow": False, "underflow": False},
         binning=(12, 60, 120),
         unit="GeV",
         x_title=r"$m_{\text{W}_{1}}^{\text{reco}}$",
@@ -1950,7 +1955,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="coarse_fit_Top1_mass",
         expression=partial(build_top1jet, which="mass"),
-        aux={"inputs": build_top1jet.inputs, "overflow": False, "underflow": False},
+        aux={"inputs": build_top1jet.inputs,
+             "overflow": False, "underflow": False},
         binning=(15, 100, 500),
         unit="GeV",
         x_title=r"$m_{\text{t}}^{\text{fit}}$",
@@ -1959,8 +1965,10 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="vcoarse_fit_Top1_mass",
         expression=partial(build_top1jet, which="mass"),
-        aux={"inputs": build_top1jet.inputs, "overflow": False, "underflow": False},
-        binning=[100, 150, 200, 225, 250, 275, 300, 325, 350, 375, 400, 450, 500, 600, 800],
+        aux={"inputs": build_top1jet.inputs,
+             "overflow": False, "underflow": False},
+        binning=[100, 150, 200, 225, 250, 275, 300,
+                 325, 350, 375, 400, 450, 500, 600, 800],
         unit="GeV",
         x_title=r"$m_{\text{t}}^{\text{fit}}$",
     )
@@ -1968,7 +1976,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="vvcoarse_fit_Top1_mass",
         expression=partial(build_top1jet, which="mass"),
-        aux={"inputs": build_top1jet.inputs, "overflow": False, "underflow": False},
+        aux={"inputs": build_top1jet.inputs,
+             "overflow": False, "underflow": False},
         binning=(14, 100, 800),
         unit="GeV",
         x_title=r"$m_{\text{t}}^{\text{fit}}$",
@@ -1977,7 +1986,8 @@ def add_variables(cfg: od.Config) -> None:
         cfg,
         name="vvvcoarse_fit_Top1_mass",
         expression=partial(build_top1jet, which="mass"),
-        aux={"inputs": build_top1jet.inputs, "overflow": False, "underflow": False},
+        aux={"inputs": build_top1jet.inputs,
+             "overflow": False, "underflow": False},
         binning=(7, 100, 800),
         unit="GeV",
         x_title=r"$m_{\text{t}}^{\text{fit}}$",

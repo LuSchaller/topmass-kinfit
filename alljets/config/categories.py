@@ -5,7 +5,8 @@ Definition of categories.
 """
 
 import order as od
-from columnflow.config_util import add_category  # , create_category_combinations, CategoryGroup
+# , create_category_combinations, CategoryGroup
+from columnflow.config_util import add_category
 
 
 # add categories using the "add_category" tool which adds auto-generated ids
@@ -85,18 +86,18 @@ def add_categories(cfg: od.Config) -> None:
         label=">2 b-tagged jets & signal trigger",
         tags={"2btj"},
     )
-    add_category(
-        cfg,
-        name="fit_conv_leq_rbb",
-        selection="cat_fit_conv_leq_rbb",
-        label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
-    )
-    add_category(
-        cfg,
-        name="fit_rbb",
-        selection="cat_rbb",
-        label=r"above $\Delta R_{\text{b}}$ cut",
-    )
+    # add_category(
+    #     cfg,
+    #     name="fit_conv_leq_rbb",
+    #     selection="cat_fit_conv_leq_rbb",
+    #     label=r"below $\chi^2$ cut and above $\Delta R_{\text{b}}$ cut",
+    # )
+    # add_category(
+    #     cfg,
+    #     name="fit_rbb",
+    #     selection="cat_rbb",
+    #     label=r"above $\Delta R_{\text{b}}$ cut",
+    # )
     add_category(
         cfg,
         name="reco_sig",
